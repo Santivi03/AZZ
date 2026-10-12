@@ -311,3 +311,15 @@ html { scrollbar-color: #2a3a52 var(--bg); }
 .club-box .h2 + p { margin-top: 16px; }
 .club-box .club-price { margin-top: 16px; }
 .footer-tagline { margin-top: 12px; font-size: 1rem; }
+
+/* Comunidad: título a la izquierda, carnets a la derecha */
+.page-hero-split .wrap { align-items: center; gap: 32px; }
+.page-hero-copy { display: grid; gap: 18px; justify-items: start; }
+.carnets { width: 100%; max-width: 560px; justify-self: center; filter: drop-shadow(0 24px 32px rgb(0 0 0 / 0.55)); }
+@media (min-width: 900px) {
+  .page-hero-split .wrap { grid-template-columns: 1fr 1.1fr; gap: 56px; }
+  .carnets { justify-self: end; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .carnets { animation: rise 1000ms 200ms var(--ease-out) both; }
+}
