@@ -3,9 +3,10 @@
 //   GET /api/thumb/<id>     -> miniatura de YouTube servida desde este dominio,
 //                              así el visitante no le manda su IP a Google.
 //
-// Datos: feeds RSS públicos del canal (gratis, sin clave). Si existe el secreto
-// YT_API_KEY, se consulta además la YouTube Data API (videos.list, 1 unidad por
-// consulta) para saber si hay una transmisión activa en este momento.
+// Datos: con el secreto YT_API_KEY se usa la YouTube Data API (playlistItems +
+// videos.list, 2 unidades por consulta) para saber si hay un vivo activo y cuál
+// es el próximo. Sin clave, o si la API falla, se usa el feed RSS público.
+// Si todo falla, se sirve el último dato bueno.
 
 const CHANNEL_ID = "UCgLBmUFPO8JtZ1nPIBQGMlQ";
 const CHANNEL_URL = `https://www.youtube.com/channel/${CHANNEL_ID}`;
@@ -15,6 +16,7 @@ const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 
 // Caché en memoria del isolate. En un dominio propio también se usa caches.default.
 let memo = { at: 0, data: null };
+let lastGood = { at: 0, data: null };
 
 export default {
   async fetch(request, env, ctx) {
@@ -44,8 +46,13 @@ async function live(request, env, ctx) {
   try {
     data = await resolveStatus(env);
   } catch {
-    // Si YouTube falla, la portada se queda con su imagen de respaldo.
     data = { status: "unknown", channelUrl: CHANNEL_URL };
+  }
+  // Si YouTube falla, seguimos mostrando el último dato bueno (hasta 6 horas).
+  if (data.status === "unknown" && lastGood.data && now - lastGood.at < 6 * 3600 * 1000) {
+    data = lastGood.data;
+  } else if (data.status !== "unknown") {
+    lastGood = { at: now, data };
   }
   memo = { at: now, data };
 
@@ -55,7 +62,10 @@ async function live(request, env, ctx) {
 }
 
 async function resolveStatus(env) {
-  const entries = await readFeed(FEED_LIVES);
+  // Con clave, la lista de vivos sale de la API (1 unidad); el feed RSS público
+  // queda de respaldo porque a veces YouTube lo devuelve con error 404.
+  let entries = env.YT_API_KEY ? await readPlaylistApi(env.YT_API_KEY) : [];
+  if (!entries.length) entries = await readFeed(FEED_LIVES);
   if (!entries.length) return { status: "unknown", channelUrl: CHANNEL_URL };
 
   // Sin clave no sabemos si está al aire: "recent" no afirma ni niega el vivo.
@@ -104,10 +114,29 @@ function asVideo(status, entry, isLive) {
   };
 }
 
+async function readPlaylistApi(key) {
+  try {
+    const api = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=8&playlistId=UULV${CHANNEL_ID.slice(2)}&key=${key}`;
+    const res = await fetch(api, { cf: { cacheTtl: 0 } });
+    if (!res.ok) return [];
+    const items = (await res.json()).items || [];
+    return items
+      .map((i) => ({ id: i.snippet?.resourceId?.videoId, title: i.snippet?.title || "" }))
+      .filter((e) => e.id && VIDEO_ID.test(e.id));
+  } catch {
+    return [];
+  }
+}
+
 async function readFeed(feedUrl) {
-  const res = await fetch(feedUrl, { cf: { cacheTtl: 0 } });
-  if (!res.ok) return [];
-  const xml = await res.text();
+  let xml;
+  try {
+    const res = await fetch(feedUrl, { cf: { cacheTtl: 0 } });
+    if (!res.ok) return [];
+    xml = await res.text();
+  } catch {
+    return [];
+  }
   return [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)]
     .map((m) => ({
       id: m[1].match(/<yt:videoId>([^<]+)<\/yt:videoId>/)?.[1],
