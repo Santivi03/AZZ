@@ -62,7 +62,7 @@ async function resolveStatus(env) {
   if (!env.YT_API_KEY) return asVideo("recent", entries[0], false);
 
   const ids = entries.slice(0, 8).map((e) => e.id).join(",");
-  const api = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${ids}&key=${env.YT_API_KEY}`;
+  const api = `https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=${ids}&key=${env.YT_API_KEY}`;
   const res = await fetch(api, { cf: { cacheTtl: 0 } });
   if (!res.ok) return asVideo("recent", entries[0], false);
 
@@ -72,7 +72,25 @@ async function resolveStatus(env) {
 
   const done = items.find((v) => v.snippet?.liveBroadcastContent === "none");
   const pick = done ? { id: done.id, title: done.snippet.title } : entries[0];
-  return asVideo("latest", pick, false);
+  return { ...asVideo("latest", pick, false), next: nextScheduled(items) };
+}
+
+// Próximo vivo programado: el más cercano que empiece desde hace 30 minutos
+// en adelante (los que quedaron programados y nunca arrancaron se descartan).
+function nextScheduled(items) {
+  const from = Date.now() - 30 * 60 * 1000;
+  const next = items
+    .filter((v) => v.snippet?.liveBroadcastContent === "upcoming")
+    .map((v) => ({ v, start: Date.parse(v.liveStreamingDetails?.scheduledStartTime || "") }))
+    .filter((x) => x.start >= from)
+    .sort((a, b) => a.start - b.start)[0];
+  if (!next) return null;
+  return {
+    videoId: next.v.id,
+    title: next.v.snippet.title,
+    start: new Date(next.start).toISOString(),
+    watchUrl: `https://www.youtube.com/watch?v=${next.v.id}`,
+  };
 }
 
 function asVideo(status, entry, isLive) {

@@ -51,6 +51,32 @@ if (player) {
       latest: "Ahora no estamos en vivo. Te dejamos el último programa.",
     }[data.status] || "El último programa del canal.";
     liveLinks.forEach((a) => { a.href = isLive ? data.watchUrl : data.channelUrl; });
+    showNext(isLive ? null : data.next);
+  };
+
+  // Próximo vivo programado (solo cuando no estamos al aire)
+  const nextBox = document.querySelector(".next-live");
+  const tz = "America/Argentina/Buenos_Aires";
+  const dayKey = (d) => d.toLocaleDateString("en-CA", { timeZone: tz });
+  const whenText = (iso) => {
+    const d = new Date(iso);
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 864e5);
+    const hour = d.toLocaleTimeString("es-AR", { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false });
+    let day;
+    if (dayKey(d) === dayKey(now)) day = "hoy";
+    else if (dayKey(d) === dayKey(tomorrow)) day = "mañana";
+    else day = d.toLocaleDateString("es-AR", { timeZone: tz, weekday: "long", day: "numeric", month: "numeric" });
+    return d <= now ? "está por empezar" : `${day} ${hour} h`;
+  };
+  const showNext = (next) => {
+    if (!nextBox) return;
+    if (!next) { nextBox.hidden = true; return; }
+    nextBox.href = next.watchUrl;
+    nextBox.querySelector(".next-when").textContent = whenText(next.start);
+    nextBox.querySelector(".next-title").textContent = next.title;
+    nextBox.setAttribute("aria-label", `Próximo vivo, ${whenText(next.start)}: ${next.title}. Activar recordatorio en YouTube`);
+    nextBox.hidden = false;
   };
 
   const refresh = async () => {
