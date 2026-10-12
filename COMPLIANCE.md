@@ -27,9 +27,9 @@ Revisión: 12/10/2026. Alcance: sitio estático que reemplaza el WordPress (home
 
 | # | Requisito | Estado | Acción |
 |---|---|---|---|
-| 1 | Política de privacidad enlazada en el footer | Cumplido | Completar los huecos de `privacidad/index.html` |
+| 1 | Política de privacidad enlazada en el footer | Cumplido | Fecha de actualización: 12/10/2026 |
 | 2 | Leyenda de la Disp. 10/2008 | Cumplido | En `privacidad/` |
-| 3 | Identificación del responsable (razón social, CUIT, domicilio) | **Falta** | Pedírsela al cliente y ponerla en el footer y en Privacidad |
+| 3 | Identificación del responsable (razón social, CUIT, domicilio) | **Falta** | Por pedido, Privacidad muestra solo el correo de contacto (12/10/2026). Para el sitio definitivo, sumar los datos del titular en Privacidad y en el footer |
 | 4 | Botón de arrepentimiento | Cumplido en parte | Hay página y link en el footer. Funciona por correo; confirmar quién envía el código de trámite en 24 h |
 | 5 | Link al botón en la primera pantalla | **A verificar** | Hoy está en el footer. Revisar si la Res. 424/2020 exige que sea visible sin scroll y, si es así, sumarlo al header |
 | 6 | Baja de la suscripción (Res. 316/2018) | Cumplido en parte | Se explica cómo cancelar en Mercado Pago. Conviene un link directo de baja |
