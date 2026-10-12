@@ -1,0 +1,10 @@
+{
+  // Sitio estático de AZZ servido por Cloudflare Workers.
+  // Solo se publica la carpeta public/.
+  "name": "azz",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "404-page"
+  }
+}
