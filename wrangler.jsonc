@@ -1,10 +1,15 @@
 {
-  // Sitio estático de AZZ servido por Cloudflare Workers.
-  // Solo se publica la carpeta public/.
+  // Sitio de AZZ en Cloudflare Workers: archivos estáticos de public/
+  // y la API del vivo en src/worker.js.
   "name": "azz",
+  "main": "src/worker.js",
   "compatibility_date": "2026-10-01",
   "assets": {
     "directory": "./public",
-    "not_found_handling": "404-page"
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*"]
   }
+  // Secreto opcional para saber si hay transmisión activa:
+  //   npx wrangler secret put YT_API_KEY
 }

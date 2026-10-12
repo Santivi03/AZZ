@@ -182,7 +182,11 @@ html { scrollbar-color: #2a3a52 var(--bg); }
   .live-badge::before { animation: pulse 1.6s ease-in-out infinite; }
 }
 @keyframes pulse { 50% { opacity: 0.25; } }
-.player-label { display: inline-flex; align-items: center; gap: 8px; }
+.player-meta { justify-content: flex-start; }
+.player-label { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.player-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-shadow: 0 1px 8px rgb(0 0 0 / 0.6); }
+.live-badge { flex: none; }
+.live-badge[hidden] { display: none; }
 .player-note { margin: 12px 0 0; font-size: 0.875rem; color: var(--muted); }
 
 /* ---------- Programas ---------- */

@@ -22,13 +22,57 @@ if (menuBtn && menu) {
   });
 }
 
-// Reproductor: YouTube se carga recién cuando la persona toca play
+// Reproductor: muestra el vivo actual o el último programa (según /api/live)
+// y carga YouTube recién cuando la persona toca play.
 const player = document.querySelector("[data-yt-channel]");
 if (player) {
-  player.querySelector(".player-btn").addEventListener("click", () => {
+  const img = player.querySelector("img");
+  const btn = player.querySelector(".player-btn");
+  const badge = player.querySelector(".live-badge");
+  const title = player.querySelector(".player-title");
+  const note = document.querySelector(".player-note");
+  const liveLinks = document.querySelectorAll("[data-live-link]");
+  let videoId = null;
+  let started = false;
+
+  const apply = (data) => {
+    if (!data || !data.videoId) return;
+    const isLive = data.status === "live";
+    if (data.videoId !== videoId) {
+      img.src = data.thumb;
+      img.alt = `Miniatura de: ${data.title}`;
+    }
+    videoId = data.videoId;
+    badge.hidden = !isLive;
+    title.textContent = data.title;
+    btn.setAttribute("aria-label", `${isLive ? "Ver en vivo" : "Ver el programa"}: ${data.title}`);
+    note.textContent = {
+      live: "Estamos en vivo ahora. Tocá play para verlo acá.",
+      latest: "Ahora no estamos en vivo. Te dejamos el último programa.",
+    }[data.status] || "El último programa del canal.";
+    liveLinks.forEach((a) => { a.href = isLive ? data.watchUrl : data.channelUrl; });
+  };
+
+  const refresh = async () => {
+    if (started || document.hidden) return;
+    try {
+      const res = await fetch("/api/live", { headers: { Accept: "application/json" } });
+      if (res.ok) apply(await res.json());
+    } catch {
+      // Sin respuesta: queda la imagen y el texto de respaldo.
+    }
+  };
+  refresh();
+  setInterval(refresh, 120000);
+  document.addEventListener("visibilitychange", refresh);
+
+  btn.addEventListener("click", () => {
+    started = true;
     const iframe = document.createElement("iframe");
-    iframe.src = `https://www.youtube.com/embed/live_stream?channel=${player.dataset.ytChannel}&autoplay=1`;
-    iframe.title = "Transmisión de AZZ en YouTube";
+    iframe.src = videoId
+      ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`
+      : `https://www.youtube.com/embed/live_stream?channel=${player.dataset.ytChannel}&autoplay=1`;
+    iframe.title = title.textContent || "Transmisión de AZZ en YouTube";
     iframe.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
     iframe.allowFullscreen = true;
     iframe.referrerPolicy = "strict-origin-when-cross-origin";
