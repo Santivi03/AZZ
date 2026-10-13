@@ -63,6 +63,11 @@ img { display: block; max-width: 100%; height: auto; }
 a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transparent; }
 button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 ::selection { background: var(--primary); color: var(--on-primary); }
+/* Mantener apretado un botón en el celular no debe seleccionar su texto */
+.btn, .menu-btn, .player-btn, .program, .next-live, .sponsor-row a,
+.mobile-menu a, .nav a, .social a, .brand, .footer-col a {
+  -webkit-user-select: none; user-select: none;
+}
 :focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; border-radius: 4px; }
 html { scrollbar-color: #2a3a52 var(--bg); }
 
