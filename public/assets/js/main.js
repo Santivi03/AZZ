@@ -148,6 +148,10 @@ if (sponsorView && !reduceMotion) {
     clearTimeout(holdTimer);
     sponsorView.classList.add("is-holding");
   });
+  // Al volver de la pestaña del sponsor, la franja retoma sí o sí
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) { clearTimeout(holdTimer); sponsorView.classList.remove("is-holding"); }
+  });
   ["pointerup", "pointercancel"].forEach((type) =>
     sponsorView.addEventListener(type, () => {
       clearTimeout(holdTimer);

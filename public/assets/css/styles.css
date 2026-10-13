@@ -264,9 +264,13 @@ html { scrollbar-color: #2a3a52 var(--bg); }
 }
 /* El espacio va como padding (no gap) para que -50% calce exacto con la copia */
 .is-marquee .sponsor-row li { flex: none; width: clamp(156px, 40vw, 224px); padding-right: 14px; }
-.is-marquee:hover .sponsor-row,
-.is-marquee:focus-within .sponsor-row,
+/* Se frena con el dedo apoyado, con el teclado y, solo con mouse, al pasar por encima.
+   Con :focus-visible un toque en el celular no la deja frenada para siempre. */
+.is-marquee:has(:focus-visible) .sponsor-row,
 .is-marquee.is-holding .sponsor-row { animation-play-state: paused; }
+@media (hover: hover) and (pointer: fine) {
+  .is-marquee:hover .sponsor-row { animation-play-state: paused; }
+}
 @keyframes marquee { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .is-marquee .sponsor-row { animation: none; } }
 
