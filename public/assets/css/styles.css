@@ -154,7 +154,10 @@ html { scrollbar-color: #2a3a52 var(--bg); }
 .tag { font-weight: 700; color: var(--primary); letter-spacing: 0.02em; line-height: 1.2; }
 @media (min-width: 1000px) {
   .hero { padding-top: 8px; }
-  .hero-grid { grid-template-columns: 5fr 7fr; gap: 56px; }
+  /* Arriba y no centrado: así la barra del próximo vivo aparece debajo sin mover
+     el reproductor. El margen lo alinea con el titular (alto del hashtag + gap). */
+  .hero-grid { grid-template-columns: 5fr 7fr; gap: 56px; align-items: start; }
+  .hero-media { margin-top: calc(1.0625rem * 1.2 + 20px); }
 }
 
 /* Un solo momento de movimiento: el titular entra al cargar */
