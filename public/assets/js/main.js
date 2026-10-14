@@ -1,3 +1,23 @@
+// Al recargar, la página arranca siempre arriba de todo. Si se llega desde otra
+// página con "#seccion" (por ejemplo, Programas desde Comunidad), baja a esa
+// sección y después limpia la dirección para que una recarga vuelva arriba.
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+const navType = performance.getEntriesByType("navigation")[0]?.type;
+const landing = location.hash && navType !== "reload" ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
+if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+if (landing) landing.scrollIntoView();
+else window.scrollTo(0, 0);
+
+// Links a secciones de esta página: bajan suave sin dejar "#seccion" en la dirección
+document.addEventListener("click", (e) => {
+  const a = e.target.closest('a[href*="#"]:not(.skip)');
+  if (!a || a.origin !== location.origin || a.pathname !== location.pathname) return;
+  const target = document.getElementById(decodeURIComponent(a.hash.slice(1)));
+  if (!target) return;
+  e.preventDefault();
+  target.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+});
+
 // Header: borde al hacer scroll
 const header = document.querySelector(".site-header");
 if (header) {
