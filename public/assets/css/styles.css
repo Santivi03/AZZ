@@ -147,13 +147,13 @@ html { scrollbar-color: #2a3a52 var(--bg); }
 }
 
 /* ---------- Hero ---------- */
-.hero { padding-block: 32px var(--section); }
+.hero { padding-block: 16px var(--section); }
 .hero-grid { display: grid; gap: 32px; align-items: center; }
 .hero-copy { display: grid; gap: 20px; justify-items: start; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
 .tag { font-weight: 700; color: var(--primary); letter-spacing: 0.02em; }
 @media (min-width: 1000px) {
-  .hero { padding-top: 56px; }
+  .hero { padding-top: 20px; }
   .hero-grid { grid-template-columns: 5fr 7fr; gap: 56px; }
 }
 
