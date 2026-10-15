@@ -52,7 +52,8 @@ if (player) {
   const title = player.querySelector(".player-title");
   const note = document.querySelector(".player-note");
   const liveLinks = document.querySelectorAll("[data-live-link]");
-  let videoId = null;
+  // Si la portada ya llegó armada desde el servidor, arrancamos con ese video
+  let videoId = player.dataset.videoId || null;
   let started = false;
 
   const apply = (data) => {

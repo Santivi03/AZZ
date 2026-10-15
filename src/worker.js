@@ -1,4 +1,4 @@
-// AZZ: sirve el sitio estático y dos rutas de API.
+// AZZ: sirve el sitio estático (la portada sale ya armada con el vivo) y dos rutas de API.
 //   GET /api/live           -> estado del canal (en vivo o último programa)
 //   GET /api/thumb/<id>     -> miniatura de YouTube servida desde este dominio,
 //                              así el visitante no le manda su IP a Google.
@@ -29,18 +29,30 @@ export default {
 
     if (url.pathname.startsWith("/api/")) return json({ error: "No existe" }, 404, 0);
 
+    if (url.pathname === "/" || url.pathname === "/index.html") return homePage(request, env, ctx);
+
     return env.ASSETS.fetch(request);
   },
 };
 
 async function live(request, env, ctx) {
+  return json(await getLiveData(request, env, ctx), 200, LIVE_TTL);
+}
+
+// Estado del canal con caché: memoria del isolate, caches.default (en dominio propio)
+// y, si YouTube falla, el último dato bueno de las últimas 6 horas.
+async function getLiveData(request, env, ctx) {
   const now = Date.now();
-  if (memo.data && now - memo.at < LIVE_TTL * 1000) return json(memo.data, 200, LIVE_TTL);
+  if (memo.data && now - memo.at < LIVE_TTL * 1000) return memo.data;
 
   const cache = caches.default;
   const key = new Request(new URL("/api/live", request.url).toString());
   const hit = await cache.match(key);
-  if (hit) return hit;
+  if (hit) {
+    const cached = await hit.json();
+    memo = { at: now, data: cached };
+    return cached;
+  }
 
   let data;
   try {
@@ -48,17 +60,82 @@ async function live(request, env, ctx) {
   } catch {
     data = { status: "unknown", channelUrl: CHANNEL_URL };
   }
-  // Si YouTube falla, seguimos mostrando el último dato bueno (hasta 6 horas).
   if (data.status === "unknown" && lastGood.data && now - lastGood.at < 6 * 3600 * 1000) {
     data = lastGood.data;
   } else if (data.status !== "unknown") {
     lastGood = { at: now, data };
   }
   memo = { at: now, data };
+  ctx.waitUntil(cache.put(key, json(data, 200, LIVE_TTL)));
+  return data;
+}
 
-  const res = json(data, 200, LIVE_TTL);
-  ctx.waitUntil(cache.put(key, res.clone()));
-  return res;
+// Portada: antes de mandar index.html le pone el vivo o el último programa,
+// así la primera imagen que se ve ya es la correcta (sin el salto desde la de respaldo).
+async function homePage(request, env, ctx) {
+  const page = await env.ASSETS.fetch(request);
+  const type = page.headers.get("Content-Type") || "";
+  if (!page.ok || !type.includes("text/html")) return page;
+
+  let data;
+  try {
+    data = await getLiveData(request, env, ctx);
+  } catch {
+    return page;
+  }
+  if (!data || !data.videoId) return page;
+
+  const isLive = data.status === "live";
+  const note = {
+    live: "Estamos en vivo ahora. Tocá play para verlo acá.",
+    latest: "Ahora no estamos en vivo. Te dejamos el último programa.",
+  }[data.status] || "El último programa del canal.";
+  const next = !isLive && data.next ? data.next : null;
+
+  const rewritten = new HTMLRewriter()
+    .on(".player", { element: (el) => el.setAttribute("data-video-id", data.videoId) })
+    .on(".player img", {
+      element: (el) => {
+        el.setAttribute("src", data.thumb);
+        el.setAttribute("alt", `Miniatura de: ${data.title}`);
+      },
+    })
+    .on(".live-badge", { element: (el) => { if (isLive) el.removeAttribute("hidden"); } })
+    .on(".player-title", { element: (el) => el.setInnerContent(data.title) })
+    .on(".player-btn", {
+      element: (el) => el.setAttribute("aria-label", `${isLive ? "Ver en vivo" : "Ver el programa"}: ${data.title}`),
+    })
+    .on(".player-note", { element: (el) => el.setInnerContent(note) })
+    .on("[data-live-link]", { element: (el) => el.setAttribute("href", isLive ? data.watchUrl : data.channelUrl) })
+    .on(".next-live", {
+      element: (el) => {
+        if (!next) return;
+        el.removeAttribute("hidden");
+        el.setAttribute("href", next.watchUrl);
+        el.setAttribute("aria-label", `Próximo vivo, ${whenText(next.start)}: ${next.title}. Activar recordatorio en YouTube`);
+      },
+    })
+    .on(".next-when", { element: (el) => { if (next) el.setInnerContent(whenText(next.start)); } })
+    .on(".next-title", { element: (el) => { if (next) el.setInnerContent(next.title); } })
+    .transform(page);
+
+  const headers = new Headers(rewritten.headers);
+  headers.set("Cache-Control", "no-cache");
+  return new Response(rewritten.body, { status: rewritten.status, headers });
+}
+
+// Mismo formato que el navegador: "hoy 22:00 h", "mañana 21:00 h", "jueves 16/10 20:00 h"
+function whenText(iso) {
+  const tz = "America/Argentina/Buenos_Aires";
+  const d = new Date(iso);
+  const now = new Date();
+  const dayKey = (x) => x.toLocaleDateString("en-CA", { timeZone: tz });
+  const hour = d.toLocaleTimeString("es-AR", { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false });
+  if (d <= now) return "está por empezar";
+  if (dayKey(d) === dayKey(now)) return `hoy ${hour} h`;
+  if (dayKey(d) === dayKey(new Date(now.getTime() + 864e5))) return `mañana ${hour} h`;
+  const day = d.toLocaleDateString("es-AR", { timeZone: tz, weekday: "long", day: "numeric", month: "numeric" });
+  return `${day} ${hour} h`;
 }
 
 async function resolveStatus(env) {
