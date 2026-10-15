@@ -166,6 +166,13 @@ html { scrollbar-color: #2a3a52 var(--bg); }
     justify-self: end;
   }
 }
+/* Pantallas bajas (notebooks chicas): miniatura más apaisada para ganar ancho
+   sin pasarse de alto. Al tocar play el video vuelve a 16:9. */
+@media (min-width: 1000px) and (max-height: 680px) {
+  .hero-media { max-width: max(420px, calc((100svh - var(--header-h) - 210px) * 2)); }
+  .hero-media .player { aspect-ratio: 2 / 1; }
+  .hero-media .player:has(iframe) { aspect-ratio: 16 / 9; }
+}
 
 /* Un solo momento de movimiento: el titular entra al cargar */
 @media (prefers-reduced-motion: no-preference) {
